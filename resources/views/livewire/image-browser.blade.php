@@ -55,7 +55,7 @@
             Select All on This Page
         </label>
         <span class="text-sm text-gray-500 dark:text-gray-400">
-            {{ $images->total() }} images
+            {{ number_format($total) }} images
         </span>
         <div class="flex-1"></div>
         <button wire:click="openBulkModal"
@@ -121,9 +121,18 @@
         @endforelse
     </div>
 
-    <div class="mt-6">
-        {{ $images->links() }}
-    </div>
+    @if($hasMorePages)
+        <div wire:poll.500ms="loadMore" class="py-8 text-center">
+            <div class="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                Loading more images...
+            </div>
+        </div>
+    @else
+        <div class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+            All {{ number_format($total) }} images loaded
+        </div>
+    @endif
 
     @if($showDeleteModal)
         <div class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">

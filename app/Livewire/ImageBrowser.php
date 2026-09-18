@@ -6,12 +6,9 @@ use App\Models\Dataset;
 use App\Models\Image;
 use App\Services\ImageDeletionService;
 use Livewire\Component;
-use Livewire\WithPagination;
 
 class ImageBrowser extends Component
 {
-    use WithPagination;
-
     public int $filterDataset = 0;
     public string $search = '';
     public string $filterLabel = '';
@@ -33,36 +30,45 @@ class ImageBrowser extends Component
     public string $bulkResult = '';
     public bool $bulkProcessing = false;
 
+    public int $perPage = 48;
+    public bool $hasMorePages = true;
+    public int $currentPage = 1;
+
     protected $listeners = ['images-deleted' => '$refresh'];
 
     public function updatedFilterDataset(): void
     {
         $this->selected = [];
-        $this->resetPage();
+        $this->currentPage = 1;
+        $this->hasMorePages = true;
     }
 
     public function updatedFilterLabel(): void
     {
         $this->selected = [];
-        $this->resetPage();
+        $this->currentPage = 1;
+        $this->hasMorePages = true;
     }
 
     public function updatedFilterStatus(): void
     {
         $this->selected = [];
-        $this->resetPage();
+        $this->currentPage = 1;
+        $this->hasMorePages = true;
     }
 
     public function updatedFilterFish(): void
     {
         $this->selected = [];
-        $this->resetPage();
+        $this->currentPage = 1;
+        $this->hasMorePages = true;
     }
 
     public function updatedSearch(): void
     {
         $this->selected = [];
-        $this->resetPage();
+        $this->currentPage = 1;
+        $this->hasMorePages = true;
     }
 
     protected $queryString = [
@@ -196,7 +202,6 @@ class ImageBrowser extends Component
 
         $added = 0;
         $skippedDup = 0;
-        $skippedInvalid = 0;
 
         foreach ($urls as $url) {
             $hash = md5($url);
@@ -233,9 +238,13 @@ class ImageBrowser extends Component
         $this->dispatch('images-deleted');
     }
 
-    public function getPageIds(): array
+    public function loadMore(): void
     {
-        return $this->getQuery()->pluck('id')->map(fn($id) => (string) $id)->toArray();
+        $this->currentPage++;
+        $totalPages = (int) ceil($this->getQuery()->count() / $this->perPage);
+        if ($this->currentPage >= $totalPages) {
+            $this->hasMorePages = false;
+        }
     }
 
     public function toggleSelectAll(): void
@@ -254,6 +263,11 @@ class ImageBrowser extends Component
         $pageIds = $this->getPageIds();
         if (empty($pageIds)) return false;
         return count(array_intersect($pageIds, $this->selected)) === count($pageIds);
+    }
+
+    public function getPageIds(): array
+    {
+        return $this->getQuery()->pluck('id')->map(fn($id) => (string) $id)->toArray();
     }
 
     public function toggleSelect(string $id): void
@@ -322,8 +336,13 @@ class ImageBrowser extends Component
 
     public function render()
     {
+        $allImages = $this->getQuery()->get();
+        $total = $allImages->count();
+        $images = $allImages->slice(0, $this->currentPage * $this->perPage);
+
         return view('livewire.image-browser', [
-            'images' => $this->getQuery()->paginate(24),
+            'images' => $images,
+            'total' => $total,
             'bulkCount' => $this->getBulkCount(),
             'allPageSelected' => $this->isAllPageSelected(),
         ]);

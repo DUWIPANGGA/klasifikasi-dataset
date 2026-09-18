@@ -21,9 +21,10 @@
         </div>
         <div class="flex gap-2">
             @if(!empty($selectedImages))
+                <span class="text-sm text-blue-700 dark:text-blue-300 font-medium">{{ count($selectedImages) }} selected</span>
                 <button wire:click="deleteSelected"
                         class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
-                    Delete Selected ({{ count($selectedImages) }})
+                    Delete Selected
                 </button>
             @endif
             <button wire:click="rebuildDuplicates"
@@ -61,12 +62,15 @@
             <div class="p-4">
                 <div class="flex flex-wrap gap-4">
                     @foreach($group->images as $image)
-                        <div class="relative w-40 bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border-2 transition-colors
-                            {{ in_array((string) $image->id, array_keys($selectedImages)) ? 'border-blue-500' : 'border-transparent' }}">
-                            <input type="checkbox"
-                                   wire:click="toggleImage({{ $image->id }})"
-                                   @if(isset($selectedImages[(string) $image->id])) checked @endif
-                                   class="absolute top-2 left-2 rounded border-gray-300 text-blue-600">
+                        <div x-data="{ sel: {{ isset($selectedImages[(string) $image->id]) ? 'true' : 'false' }} }"
+                             @click="sel = !sel; $wire.toggleImage({{ $image->id }})"
+                             :class="sel ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-800 bg-blue-50 dark:bg-blue-900/20' : 'border-transparent bg-gray-50 dark:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
+                             class="relative w-40 rounded-lg p-3 border-2 transition-all duration-150 cursor-pointer select-none">
+                            <template x-if="sel">
+                                <div class="absolute top-2 left-2 bg-blue-600 rounded-full p-1 z-10 shadow-lg">
+                                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                            </template>
                             <div class="w-full aspect-square bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center mt-2 overflow-hidden">
                                 @if($image->thumbnail || $image->image_url)
                                     <img src="{{ $image->thumbnail ?: $image->image_url }}" alt="{{ $image->filename }}"
@@ -99,9 +103,22 @@
         </div>
     @endforelse
 
-    <div class="mt-6">
-        {{ $groups->links() }}
+    <div class="mb-4 text-sm text-gray-500 dark:text-gray-400">
+        {{ number_format($total) }} duplicate groups
     </div>
+
+    @if($hasMorePages)
+        <div wire:poll.500ms="loadMore" class="py-8 text-center">
+            <div class="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                Loading more groups...
+            </div>
+        </div>
+    @else
+        <div class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
+            All {{ number_format($total) }} groups loaded
+        </div>
+    @endif
 
     @if($showDeleteModal)
         <div class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">

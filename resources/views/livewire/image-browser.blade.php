@@ -1,4 +1,53 @@
-<div>
+<div x-data="{
+    ctx: false, ctxX: 0, ctxY: 0, ctxId: null, ctxLabel: '',
+    editingLabel: false, editVal: '',
+    justOpened: false,
+    init() {
+        document.addEventListener('click', () => {
+            if (this.justOpened) { this.justOpened = false; return; }
+            this.ctx = false;
+            this.editingLabel = false;
+        });
+    }
+}" x-on:keydown.escape.window="ctx = false; editingLabel = false">
+
+    {{-- Context Menu --}}
+    <template x-if="ctx" x-teleport="body">
+        <div class="fixed z-[9999]" :style="'left:' + ctxX + 'px; top:' + ctxY + 'px'"
+             @click.stop @contextmenu.prevent="ctx = false">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 py-1 min-w-[140px]">
+                <template x-if="!editingLabel">
+                    <div>
+                        <button @click="editingLabel = true; editVal = ctxLabel"
+                                class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            Edit Label
+                        </button>
+                        <button @click="ctx = false; $wire.deleteSingle(ctxId)"
+                                class="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            Delete
+                        </button>
+                    </div>
+                </template>
+                <template x-if="editingLabel">
+                    <div class="p-2">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1 px-1">Select label:</p>
+                        <select x-model="editVal"
+                                @change="editingLabel = false; ctx = false; $wire.updateLabel(ctxId, editVal)"
+                                class="w-full text-sm rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-2 py-1.5">
+                            @foreach($this->labels as $l)
+                                <option value="{{ $l }}">{{ $l }}</option>
+                            @endforeach
+                        </select>
+                        <button @click="editingLabel = false"
+                                class="w-full text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mt-1 px-1">Cancel</button>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
     <div class="mb-6 flex flex-wrap gap-4 items-center">
         <select wire:model.live="filterDataset" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm font-medium">
             <option value="0">All Datasets</option>
@@ -72,12 +121,19 @@
 
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
         @forelse($images as $image)
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden group hover:shadow-md transition-shadow">
+            <div x-data="{ sel: {{ in_array((string) $image->id, $selected) ? 'true' : 'false' }} }"
+                 @click="sel = !sel; $wire.toggleSelect('{{ $image->id }}')"
+                 @contextmenu.prevent.stop="ctx = true; justOpened = true; ctxX = $event.clientX; ctxY = $event.clientY; ctxId = {{ $image->id }}; ctxLabel = '{{ $image->label }}'"
+                 :class="sel ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-gray-200 dark:border-gray-700'"
+                 class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border overflow-hidden group hover:shadow-md transition-all duration-150 cursor-pointer select-none">
                 <div class="relative aspect-square bg-gray-100 dark:bg-gray-700">
-                    <input type="checkbox" value="{{ $image->id }}"
-                           wire:click="toggleSelect('{{ $image->id }}')"
-                           @if(in_array((string) $image->id, $selected)) checked @endif
-                           class="absolute top-2 left-2 z-10 rounded border-gray-300 text-blue-600">
+                    <template x-if="sel">
+                        <div class="absolute inset-0 bg-blue-500/20 flex items-center justify-center z-[5]">
+                            <div class="bg-blue-600 rounded-full p-1.5 shadow-lg">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                        </div>
+                    </template>
                     @if($image->thumbnail || $image->image_url)
                         <img src="{{ $image->thumbnail ?: $image->image_url }}" alt="{{ $image->filename }}"
                              class="w-full h-full object-cover" loading="lazy"
@@ -110,6 +166,7 @@
                             {{ $image->label }}
                         </span>
                         <a href="{{ route('images.show', $image) }}"
+                           wire:click.stop
                            class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400">View</a>
                     </div>
                 </div>

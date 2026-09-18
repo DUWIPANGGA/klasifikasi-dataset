@@ -16,6 +16,37 @@ class DuplicateBrowser extends Component
     public string $filterType = '';
     public string $filterLabel = '';
     public int $perPage = 20;
+    public int $currentPage = 1;
+    public bool $hasMorePages = true;
+
+    protected $listeners = ['duplicates-updated' => '$refresh'];
+
+    protected $queryString = [
+        'filterDataset' => ['except' => 0],
+        'filterType' => ['except' => ''],
+        'filterLabel' => ['except' => ''],
+    ];
+
+    public function updatedFilterDataset(): void
+    {
+        $this->selectedImages = [];
+        $this->currentPage = 1;
+        $this->hasMorePages = true;
+    }
+
+    public function updatedFilterType(): void
+    {
+        $this->selectedImages = [];
+        $this->currentPage = 1;
+        $this->hasMorePages = true;
+    }
+
+    public function updatedFilterLabel(): void
+    {
+        $this->selectedImages = [];
+        $this->currentPage = 1;
+        $this->hasMorePages = true;
+    }
 
     public function getDatasetsProperty()
     {
@@ -31,7 +62,7 @@ class DuplicateBrowser extends Component
         return $q->pluck('label')->filter()->sort()->values()->toArray();
     }
 
-    public function getGroups()
+    public function getQuery()
     {
         $query = DuplicateGroup::with('images')->withCount('images');
 
@@ -47,7 +78,16 @@ class DuplicateBrowser extends Component
             $query->whereHas('images', fn($q) => $q->where('label', $this->filterLabel));
         }
 
-        return $query->latest()->paginate($this->perPage);
+        return $query->latest();
+    }
+
+    public function loadMore(): void
+    {
+        $this->currentPage++;
+        $totalPages = (int) ceil($this->getQuery()->count() / $this->perPage);
+        if ($this->currentPage >= $totalPages) {
+            $this->hasMorePages = false;
+        }
     }
 
     public function toggleImage(int $imageId): void
@@ -108,8 +148,13 @@ class DuplicateBrowser extends Component
 
     public function render()
     {
+        $allGroups = $this->getQuery()->get();
+        $total = $allGroups->count();
+        $groups = $allGroups->slice(0, $this->currentPage * $this->perPage);
+
         return view('livewire.duplicate-browser', [
-            'groups' => $this->getGroups(),
+            'groups' => $groups,
+            'total' => $total,
         ]);
     }
 }

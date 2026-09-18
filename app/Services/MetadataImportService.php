@@ -82,57 +82,135 @@ class MetadataImportService
             'missing_files' => 0,
         ];
 
-        DB::beginTransaction();
-        try {
-            foreach ($rows as $row) {
-                $errors = $this->validateRow($row);
-                if (!empty($errors)) {
-                    $stats['invalid']++;
-                    continue;
-                }
+        $validRows = [];
+        foreach ($rows as $row) {
+            $errors = $this->validateRow($row);
+            if (!empty($errors)) {
+                $stats['invalid']++;
+                continue;
+            }
+            $validRows[] = $row;
+        }
 
-                $filepath = $this->normalizeFilepath($row['filepath']);
+        if (empty($validRows)) {
+            return $stats;
+        }
 
-                $exists = Image::where('dataset_id', $dataset->id)
-                    ->where('filename', $row['filename'])
-                    ->where('hash', $row['hash'])
-                    ->exists();
+        $existingHashes = Image::where('dataset_id', $dataset->id)
+            ->whereIn('hash', array_column($validRows, 'hash'))
+            ->pluck('hash')
+            ->flip()
+            ->toArray();
 
-                if ($exists) {
-                    $stats['already_exists']++;
-                    continue;
-                }
+        $now = now()->toDateTimeString();
+        $toInsert = [];
 
-                if (!$this->storage->fileExists($filepath)) {
-                    $stats['missing_files']++;
-                }
-
-                Image::create([
-                    'dataset_id' => $dataset->id,
-                    'filename' => $row['filename'],
-                    'filepath' => $filepath,
-                    'image_url' => $row['image_url'] ?? null,
-                    'thumbnail' => $row['thumbnail'] ?? null,
-                    'source' => $row['source'] ?? null,
-                    'title' => $row['title'] ?? null,
-                    'width' => $row['width'] ?? null,
-                    'height' => $row['height'] ?? null,
-                    'hash' => $row['hash'],
-                    'downloaded_at' => $row['downloaded_at'] ?? null,
-                    'fish_name' => $row['fish_name'],
-                    'common_name' => $row['common_name'] ?? null,
-                    'label' => $row['label'] ?? 'unknown',
-                    'query' => $row['query'] ?? null,
-                    'status' => 'active',
-                ]);
-
-                $stats['imported']++;
+        foreach ($validRows as $row) {
+            if (isset($existingHashes[$row['hash']])) {
+                $stats['already_exists']++;
+                continue;
             }
 
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
+            $filepath = $this->normalizeFilepath($row['filepath']);
+
+            $toInsert[] = [
+                'dataset_id' => $dataset->id,
+                'filename' => $row['filename'],
+                'filepath' => $filepath,
+                'image_url' => $row['image_url'] ?? null,
+                'thumbnail' => $row['thumbnail'] ?? null,
+                'source' => $row['source'] ?? null,
+                'title' => $row['title'] ?? null,
+                'width' => $row['width'] ?? null,
+                'height' => $row['height'] ?? null,
+                'hash' => $row['hash'],
+                'downloaded_at' => $row['downloaded_at'] ?? null,
+                'fish_name' => $row['fish_name'],
+                'common_name' => $row['common_name'] ?? null,
+                'label' => $row['label'] ?? 'unknown',
+                'query' => $row['query'] ?? null,
+                'status' => 'active',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        $chunks = array_chunk($toInsert, 500);
+        foreach ($chunks as $chunk) {
+            DB::table('images')->insert($chunk);
+            $stats['imported'] += count($chunk);
+        }
+
+        return $stats;
+    }
+
+    public function importBatch(Dataset $dataset, array $allRows): array
+    {
+        $stats = [
+            'total' => count($allRows),
+            'imported' => 0,
+            'already_exists' => 0,
+            'invalid' => 0,
+            'missing_files' => 0,
+        ];
+
+        $validRows = [];
+        foreach ($allRows as $row) {
+            $errors = $this->validateRow($row);
+            if (!empty($errors)) {
+                $stats['invalid']++;
+                continue;
+            }
+            $validRows[] = $row;
+        }
+
+        if (empty($validRows)) {
+            return $stats;
+        }
+
+        $existingHashes = Image::where('dataset_id', $dataset->id)
+            ->whereIn('hash', array_column($validRows, 'hash'))
+            ->pluck('hash')
+            ->flip()
+            ->toArray();
+
+        $now = now()->toDateTimeString();
+        $toInsert = [];
+
+        foreach ($validRows as $row) {
+            if (isset($existingHashes[$row['hash']])) {
+                $stats['already_exists']++;
+                continue;
+            }
+
+            $filepath = $this->normalizeFilepath($row['filepath']);
+
+            $toInsert[] = [
+                'dataset_id' => $dataset->id,
+                'filename' => $row['filename'],
+                'filepath' => $filepath,
+                'image_url' => $row['image_url'] ?? null,
+                'thumbnail' => $row['thumbnail'] ?? null,
+                'source' => $row['source'] ?? null,
+                'title' => $row['title'] ?? null,
+                'width' => $row['width'] ?? null,
+                'height' => $row['height'] ?? null,
+                'hash' => $row['hash'],
+                'downloaded_at' => $row['downloaded_at'] ?? null,
+                'fish_name' => $row['fish_name'],
+                'common_name' => $row['common_name'] ?? null,
+                'label' => $row['label'] ?? 'unknown',
+                'query' => $row['query'] ?? null,
+                'status' => 'active',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        $chunks = array_chunk($toInsert, 500);
+        foreach ($chunks as $chunk) {
+            DB::table('images')->insert($chunk);
+            $stats['imported'] += count($chunk);
         }
 
         return $stats;

@@ -284,6 +284,17 @@ class ImageBrowser extends Component
         $this->selected = [];
     }
 
+    public function updateLabel(int $imageId, string $newLabel): void
+    {
+        Image::where('id', $imageId)->update(['label' => $newLabel]);
+    }
+
+    public function deleteSingle(int $imageId): void
+    {
+        $this->selected = [(string) $imageId];
+        $this->showDeleteModal = true;
+    }
+
     public function getQuery()
     {
         $query = Image::query();

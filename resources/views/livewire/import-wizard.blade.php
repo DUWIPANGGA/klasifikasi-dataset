@@ -6,14 +6,14 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">CSV Files (up to 50)</label>
-                    <input type="file" wire:model.live="csvFiles" accept=".csv,.txt" multiple
+                    <input type="file" wire:model="csvFiles" accept=".csv,.txt" multiple
                            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900 dark:file:text-blue-300">
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Hold Ctrl/Cmd to select multiple files</p>
                 </div>
                 @error('csvFiles') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
                 @error('csvFiles.*') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
 
-                @if(count($csvFiles) > 0)
+                @if(!empty($csvFiles) && count($csvFiles) > 0)
                     <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                         <p class="text-sm text-blue-700 dark:text-blue-300 font-medium">{{ count($csvFiles) }} file(s) selected</p>
                     </div>

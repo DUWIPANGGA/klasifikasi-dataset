@@ -23,6 +23,7 @@ class ImportWizard extends Component
     public int $currentFileIndex = 0;
     public int $totalFiles = 0;
     public string $importMode = 'auto';
+    public bool $filesUploaded = false;
 
     public function getDatasetsProperty()
     {
@@ -39,12 +40,21 @@ class ImportWizard extends Component
         $this->filePreviews = [];
         $service = new MetadataImportService();
 
+        $tmpDir = storage_path('app/tmp');
+        if (!is_dir($tmpDir)) {
+            mkdir($tmpDir, 0755, true);
+        }
+
         foreach ($this->csvFiles as $index => $file) {
             $realPath = $file->getRealPath();
             $rows = $service->parseCsv($realPath);
+
+            $permanentPath = $tmpDir . '/import_' . time() . '_' . $index . '.csv';
+            copy($realPath, $permanentPath);
+
             $this->filePreviews[$index] = [
                 'name' => $file->getClientOriginalName(),
-                'stored_path' => $file->store('tmp'),
+                'permanent_path' => 'tmp/import_' . time() . '_' . $index . '.csv',
                 'total_rows' => count($rows),
                 'preview' => array_slice($rows, 0, 3),
                 'headers' => !empty($rows[0]) ? array_keys($rows[0]) : [],
@@ -52,11 +62,17 @@ class ImportWizard extends Component
         }
 
         $this->totalFiles = count($this->csvFiles);
+        $this->csvFiles = [];
+        $this->filesUploaded = true;
         $this->step = 2;
     }
 
     public function startImport(): void
     {
+        if (empty($this->filePreviews)) {
+            return;
+        }
+
         $this->importing = true;
         $this->step = 3;
         $this->currentFileIndex = 0;
@@ -65,13 +81,17 @@ class ImportWizard extends Component
         $service = new MetadataImportService();
         $dupService = app(DuplicateDetectionService::class);
 
+        $allRowsByDataset = [];
+
         foreach ($this->filePreviews as $index => $fileInfo) {
             $this->currentFileIndex = $index + 1;
 
-            $realPath = storage_path('app/' . $fileInfo['stored_path']);
+            $realPath = storage_path('app/' . $fileInfo['permanent_path']);
             if (!file_exists($realPath)) {
                 continue;
             }
+
+            $rows = $service->parseCsv($realPath);
 
             if ($this->importMode === 'auto') {
                 $datasetName = pathinfo($fileInfo['name'], PATHINFO_FILENAME);
@@ -83,6 +103,7 @@ class ImportWizard extends Component
                         'root_path' => config('dataset.root_path'),
                     ]
                 );
+                $datasetId = $dataset->id;
             } else {
                 if ($this->selectedDatasetId === 0) {
                     $dataset = Dataset::create([
@@ -93,22 +114,42 @@ class ImportWizard extends Component
                     ]);
                     $this->selectedDatasetId = $dataset->id;
                 }
-                $dataset = Dataset::find($this->selectedDatasetId);
+                $datasetId = $this->selectedDatasetId;
+                $dataset = Dataset::find($datasetId);
             }
 
-            $rows = $service->parseCsv($realPath);
-            $stats = $service->import($dataset, $rows);
+            if (!isset($allRowsByDataset[$datasetId])) {
+                $allRowsByDataset[$datasetId] = ['dataset' => $dataset, 'rows' => [], 'file_names' => []];
+            }
+            $allRowsByDataset[$datasetId]['rows'] = array_merge($allRowsByDataset[$datasetId]['rows'], $rows);
+            $allRowsByDataset[$datasetId]['file_names'][] = $fileInfo['name'];
 
-            $dupResult = $dupService->detectForDataset($dataset);
-            $stats['duplicates'] = $dupResult['duplicates'] ?? 0;
-            $stats['cross_label_duplicates'] = $dupResult['cross_label_duplicates'] ?? 0;
-            $stats['file_name'] = $fileInfo['name'];
+            @unlink($realPath);
+        }
+
+        foreach ($allRowsByDataset as $datasetId => $data) {
+            $dataset = $data['dataset'];
+            $allRows = $data['rows'];
+
+            $stats = $service->importBatch($dataset, $allRows);
+            $stats['file_name'] = implode(', ', $data['file_names']);
             $stats['dataset_name'] = $dataset->name;
 
             $this->importResults[] = $stats;
+        }
 
-            if (file_exists($realPath)) {
-                unlink($realPath);
+        $allDatasetIds = array_keys($allRowsByDataset);
+        if (!empty($allDatasetIds)) {
+            foreach ($allDatasetIds as $datasetId) {
+                $dataset = Dataset::find($datasetId);
+                $dupResult = $dupService->detectForDataset($dataset);
+                foreach ($this->importResults as &$result) {
+                    if ($result['dataset_name'] === $dataset->name) {
+                        $result['duplicates'] = $dupResult['duplicates'] ?? 0;
+                        $result['cross_label_duplicates'] = $dupResult['cross_label_duplicates'] ?? 0;
+                    }
+                }
+                unset($result);
             }
         }
 
@@ -120,6 +161,7 @@ class ImportWizard extends Component
     {
         $this->reset();
         $this->step = 1;
+        $this->filesUploaded = false;
     }
 
     public function render()

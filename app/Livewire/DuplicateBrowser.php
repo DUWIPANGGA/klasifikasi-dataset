@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Dataset;
 use App\Models\DuplicateGroup;
+use App\Models\Image;
 use App\Services\DuplicateDetectionService;
 use App\Services\ImageDeletionService;
 use Livewire\Component;
@@ -13,6 +14,11 @@ class DuplicateBrowser extends Component
     public int $filterDataset = 0;
     public array $selectedImages = [];
     public bool $showDeleteModal = false;
+    public bool $showCleanModal = false;
+    public int $cleanTotal = 0;
+    public int $cleanKept = 0;
+    public int $cleanDeleted = 0;
+    public bool $cleanProcessing = false;
     public string $filterType = '';
     public string $filterLabel = '';
     public int $perPage = 20;
@@ -159,6 +165,61 @@ class DuplicateBrowser extends Component
         $service = app(DuplicateDetectionService::class);
         $service->detectAll();
         $this->dispatch('duplicates-rebuilt');
+    }
+
+    public function cleanAllDuplicates(): void
+    {
+        $groups = $this->getQuery()->get();
+        $this->cleanTotal = $groups->count();
+        $this->cleanKept = 0;
+        $this->cleanDeleted = 0;
+        $this->showCleanModal = true;
+    }
+
+    public function confirmClean(): void
+    {
+        $this->cleanProcessing = true;
+
+        $groups = $this->getQuery()->get();
+        $deletionService = app(ImageDeletionService::class);
+        $totalGroups = $groups->count();
+        $processed = 0;
+        $errors = [];
+
+        foreach ($groups as $group) {
+            $images = $group->images->sortBy('id')->values();
+
+            if ($images->count() < 2) {
+                $processed++;
+                $this->dispatch('clean-progress', processed: $processed, total: $totalGroups);
+                continue;
+            }
+
+            $toDelete = $images->slice(1)->pluck('id')->toArray();
+
+            try {
+                $deletionService->deleteImages($toDelete, true);
+                $this->cleanDeleted += count($toDelete);
+                $this->cleanKept++;
+            } catch (\Exception $e) {
+                $errors[] = "Group #{$group->id}: {$e->getMessage()}";
+            }
+
+            $processed++;
+            $this->dispatch('clean-progress', processed: $processed, total: $totalGroups);
+        }
+
+        $dupService = app(DuplicateDetectionService::class);
+        $dupService->detectAll();
+
+        $this->cleanProcessing = false;
+        $this->showCleanModal = false;
+
+        if (!empty($errors)) {
+            $this->deleteError = implode("\n", $errors);
+        }
+
+        $this->dispatch('duplicates-updated');
     }
 
     public function render()

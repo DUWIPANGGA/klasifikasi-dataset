@@ -1,4 +1,5 @@
-<div>
+<div x-data="{ cleanProgress: 0, cleanTotal: 0 }"
+     x-on:clean-progress.window="cleanProgress = $event.detail.processed; cleanTotal = $event.detail.total">
     <div class="mb-6 flex flex-wrap gap-4 items-center justify-between">
         <div class="flex gap-4 items-center">
             <select wire:model.live="filterDataset" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm font-medium">
@@ -28,6 +29,11 @@
                     Delete Selected
                 </button>
             @endif
+            <button wire:click="cleanAllDuplicates"
+                    class="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                Clean All Duplicates
+            </button>
             <button wire:click="rebuildDuplicates"
                     class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
                 Rebuild Duplicates
@@ -155,6 +161,52 @@
                             <span wire:loading.remove>Delete</span>
                             <span wire:loading>Menghapus...</span>
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if($showCleanModal)
+        <div class="fixed inset-0 z-[9998] overflow-y-auto" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-gray-500/75 dark:bg-gray-900/75" @if(!$cleanProcessing) wire:click="$set('showCleanModal', false)" @endif></div>
+                <div class="relative bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Clean All Duplicates</h3>
+                    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        Setiap grup duplikat akan disisihkan 1 gambar (ID paling kecil). Sisanya dihapus permanen.
+                    </p>
+                    <p class="mt-1 text-sm text-orange-600 dark:text-orange-400 font-medium">
+                        Cross-label: label diambil dari gambar pertama.
+                    </p>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        {{ number_format($cleanTotal) }} grup akan diproses.
+                    </p>
+                    @if($cleanProcessing)
+                        <div class="mt-4">
+                            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                <span>Processing...</span>
+                                <span x-text="cleanProgress + ' / ' + cleanTotal"></span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                <div class="bg-orange-600 h-2.5 rounded-full transition-all duration-300"
+                                     :style="'width:' + (cleanTotal > 0 ? (cleanProgress / cleanTotal * 100) : 0) + '%'"></div>
+                            </div>
+                        </div>
+                    @endif
+                    <div class="mt-4 flex gap-3 justify-end">
+                        <button wire:click="$set('showCleanModal', false)"
+                                class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm disabled:opacity-50"
+                                {{ $cleanProcessing ? 'disabled' : '' }}>
+                            {{ $cleanProcessing ? 'Processing...' : 'Cancel' }}
+                        </button>
+                        @unless($cleanProcessing)
+                            <button wire:click="confirmClean"
+                                    class="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 inline-flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                Clean Now
+                            </button>
+                        @endunless
                     </div>
                 </div>
             </div>

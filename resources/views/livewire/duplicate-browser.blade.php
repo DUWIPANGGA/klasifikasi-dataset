@@ -12,6 +12,7 @@
                 <option value="">All Types</option>
                 <option value="internal">Internal Duplicates</option>
                 <option value="cross_label">Cross-label Duplicates</option>
+                <option value="cross_dataset">Cross-dataset Duplicates</option>
             </select>
             <select wire:model.live="filterLabel" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm">
                 <option value="">All Labels</option>
@@ -60,7 +61,11 @@
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <span class="font-mono text-sm text-gray-500 dark:text-gray-400">Group #{{ $group->id }}</span>
-                    @if($group->isCrossLabel())
+                    @if($group->isCrossDataset())
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
+                            CROSS-DATASET
+                        </span>
+                    @elseif($group->isCrossLabel())
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
                             &#9888; CROSS-LABEL DUPLICATE
                         </span>
@@ -109,6 +114,9 @@
                                 @endif
                             </div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 truncate" title="{{ $image->filename }}">{{ $image->filename }}</p>
+                            @if($group->isCrossDataset())
+                                <p class="text-xs text-purple-600 dark:text-purple-400 font-medium mt-0.5 truncate">{{ $image->dataset->name ?? 'Unknown' }}</p>
+                            @endif
                             <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium mt-1
                                 {{ $image->label === 'healthy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' }}">
                                 {{ $image->label }}

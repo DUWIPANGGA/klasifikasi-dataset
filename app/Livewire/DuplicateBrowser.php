@@ -78,7 +78,7 @@ class DuplicateBrowser extends Component
 
     public function getQuery()
     {
-        $query = DuplicateGroup::with('images')->withCount('images');
+        $query = DuplicateGroup::with(['images', 'images.dataset'])->withCount('images');
 
         if ($this->filterDataset) {
             $query->whereHas('images', fn($q) => $q->where('dataset_id', $this->filterDataset));

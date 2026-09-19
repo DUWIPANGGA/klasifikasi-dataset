@@ -67,6 +67,61 @@ class DuplicateDetectionService
         foreach ($datasets as $dataset) {
             $results[$dataset->id] = $this->detectForDataset($dataset);
         }
+
+        $results['cross_dataset'] = $this->detectCrossDataset();
+
         return $results;
+    }
+
+    public function detectCrossDataset(): array
+    {
+        $hashGroups = Image::where('status', '!=', 'deleted')
+            ->select('hash', DB::raw('COUNT(DISTINCT dataset_id) as dataset_count'), DB::raw('COUNT(*) as count'))
+            ->groupBy('hash')
+            ->having('dataset_count', '>', 1)
+            ->having('count', '>', 1)
+            ->get();
+
+        $duplicates = 0;
+        $crossLabelDuplicates = 0;
+
+        DB::beginTransaction();
+        try {
+            DuplicateGroup::where('type', 'cross_dataset')->delete();
+
+            foreach ($hashGroups as $group) {
+                $images = Image::where('hash', $group->hash)
+                    ->where('status', '!=', 'deleted')
+                    ->get();
+
+                if ($images->count() < 2) continue;
+
+                $labels = $images->pluck('label')->unique();
+                $isCrossLabel = $labels->count() > 1;
+
+                $duplicateGroup = DuplicateGroup::create([
+                    'dataset_id' => $images->first()->dataset_id,
+                    'hash' => $group->hash,
+                    'type' => 'cross_dataset',
+                ]);
+
+                $duplicateGroup->images()->attach($images->pluck('id'));
+                $duplicates++;
+
+                if ($isCrossLabel) {
+                    $crossLabelDuplicates++;
+                }
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+
+        return [
+            'duplicates' => $duplicates,
+            'cross_label_duplicates' => $crossLabelDuplicates,
+        ];
     }
 }

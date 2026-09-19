@@ -343,6 +343,11 @@ class ImageBrowser extends Component
         $this->dispatch('images-deleted');
     }
 
+    public function selectRange(array $ids): void
+    {
+        $this->selected = array_values(array_unique(array_merge($this->selected, $ids)));
+    }
+
     public function openBulkEditModal(): void
     {
         if (empty($this->selected)) return;

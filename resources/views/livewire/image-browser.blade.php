@@ -197,10 +197,33 @@
     </div>
 
     {{-- Image Grid --}}
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-        @forelse($images as $image)
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4"
+         x-data="{ lastIdx: -1 }"
+         @click="lastIdx = -1">
+        @forelse($images as $idx => $image)
             <div x-data="{ sel: {{ in_array((string) $image->id, $selected) ? 'true' : 'false' }} }"
-                 @click.prevent.stop="if($event.button === 0) { sel = !sel; $wire.toggleSelect('{{ $image->id }}') }"
+                 @click.prevent.stop="
+                    if ($event.button !== 0) return;
+                    if ($event.shiftKey && lastIdx >= 0) {
+                        let items = $el.parentElement.children;
+                        let start = Math.min(lastIdx, {{ $idx }});
+                        let end = Math.max(lastIdx, {{ $idx }});
+                        let ids = [];
+                        for (let i = start; i <= end; i++) {
+                            let card = items[i];
+                            if (card && card.dataset.id) {
+                                ids.push(card.dataset.id);
+                                card.classList.add('ring-2', 'ring-blue-200', 'dark:ring-blue-800', 'border-blue-500', 'dark:border-blue-400');
+                            }
+                        }
+                        $wire.selectRange(ids);
+                    } else {
+                        sel = !sel;
+                        $wire.toggleSelect('{{ $image->id }}');
+                    }
+                    lastIdx = {{ $idx }};
+                 "
+                 data-id="{{ $image->id }}"
                  @contextmenu.prevent.stop="ctx = true; ctxX = $event.clientX; ctxY = $event.clientY; ctxId = {{ $image->id }}; ctxLabel = '{{ $image->label }}'; ctxDataset = {{ $image->dataset_id }}; ctxFishName = '{{ $image->fish_name }}'"
                  :class="sel ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-gray-200 dark:border-gray-700'"
                  class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border overflow-hidden group hover:shadow-md transition-all duration-150 cursor-pointer select-none">

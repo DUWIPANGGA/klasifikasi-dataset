@@ -28,4 +28,9 @@ class DuplicateGroup extends Model
     {
         return $this->type === 'cross_label';
     }
+
+    public function isCrossDataset(): bool
+    {
+        return $this->type === 'cross_dataset';
+    }
 }

@@ -113,7 +113,7 @@
                         <div class="flex gap-2">
                             <button wire:click="close" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm">Close</button>
                             <button wire:click="importSelected" wire:loading.attr="disabled"
-                                    disabled="{{ empty($selected) || $filterDataset === 0 || $importing }}"
+                                    @disabled(empty($selected) || $filterDataset === 0 || $importing)
                                     class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium">
                                 @if($importing)
                                     Importing...

@@ -7,6 +7,7 @@ use App\Http\Controllers\DuplicateController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ExportDownloadController;
 use App\Http\Controllers\ImageController;
+use App\Http\Controllers\ImageProxyController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\MissingController;
 use Illuminate\Support\Facades\Route;
@@ -29,4 +30,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/missing', [MissingController::class, 'index'])->name('missing');
 
     Route::get('/datasets', [DatasetController::class, 'index'])->name('datasets');
+
+    Route::get('/image-proxy', ImageProxyController::class)->name('image-proxy');
 });

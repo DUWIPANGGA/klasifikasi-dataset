@@ -184,6 +184,11 @@
                 @endforeach
             @endif
         </div>
+        <button wire:click="$dispatch('open-image-search')"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            Search & Import
+        </button>
         <button wire:click="openBulkModal"
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -198,11 +203,10 @@
 
     {{-- Image Grid --}}
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4"
-         x-data="{ lastIdx: -1 }"
+         x-data="{ lastIdx: -1, sel: {{ json_encode(collect($selected)->mapWithKeys(fn($id) => [$id => true])->toArray()) }} }"
          @click="lastIdx = -1">
         @forelse($images as $idx => $image)
-            <div x-data="{ sel: {{ in_array((string) $image->id, $selected) ? 'true' : 'false' }} }"
-                 @click.prevent.stop="
+            <div @click.prevent.stop="
                     if ($event.button !== 0) return;
                     if ($event.shiftKey && lastIdx >= 0) {
                         let items = $el.parentElement.children;
@@ -213,22 +217,23 @@
                             let card = items[i];
                             if (card && card.dataset.id) {
                                 ids.push(card.dataset.id);
-                                card.classList.add('ring-2', 'ring-blue-200', 'dark:ring-blue-800', 'border-blue-500', 'dark:border-blue-400');
+                                sel[card.dataset.id] = true;
                             }
                         }
                         $wire.selectRange(ids);
                     } else {
-                        sel = !sel;
-                        $wire.toggleSelect('{{ $image->id }}');
+                        let id = '{{ $image->id }}';
+                        sel[id] = !sel[id];
+                        $wire.toggleSelect(id);
                     }
                     lastIdx = {{ $idx }};
                  "
                  data-id="{{ $image->id }}"
                  @contextmenu.prevent.stop="ctx = true; ctxX = $event.clientX; ctxY = $event.clientY; ctxId = {{ $image->id }}; ctxLabel = '{{ $image->label }}'; ctxDataset = {{ $image->dataset_id }}; ctxFishName = '{{ $image->fish_name }}'"
-                 :class="sel ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-gray-200 dark:border-gray-700'"
+                 :class="sel['{{ $image->id }}'] ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-gray-200 dark:border-gray-700'"
                  class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border overflow-hidden group hover:shadow-md transition-all duration-150 cursor-pointer select-none">
                 <div class="relative aspect-square bg-gray-100 dark:bg-gray-700">
-                    <template x-if="sel">
+                    <template x-if="sel['{{ $image->id }}']">
                         <div class="absolute inset-0 bg-blue-500/20 flex items-center justify-center z-[5]">
                             <div class="bg-blue-600 rounded-full p-1.5 shadow-lg">
                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>

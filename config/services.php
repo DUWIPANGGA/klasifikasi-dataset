@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'image_search' => [
+        'provider' => env('SERVICES_IMAGE_SEARCH_PROVIDER', 'yandex'),
+        'api_key' => env('SERVICES_IMAGE_SEARCH_API_KEY', ''),
+        'search_engine_id' => env('SERVICES_IMAGE_SEARCH_ENGINE_ID', ''),
+    ],
+
 ];

@@ -3,5 +3,6 @@
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Image Browser</h1>
         <p class="text-gray-600 dark:text-gray-400 mt-1">Browse and manage dataset images</p>
     </div>
+    <livewire:image-search />
     <livewire:image-browser />
 </x-app-layout>

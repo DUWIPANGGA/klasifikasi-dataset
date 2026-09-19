@@ -9,6 +9,7 @@ class Dataset extends Model
 {
     protected $fillable = [
         'name',
+        'fish_name',
         'description',
         'storage_driver',
         'root_path',

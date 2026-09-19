@@ -18,6 +18,7 @@ class DuplicateBrowser extends Component
     public int $perPage = 20;
     public int $currentPage = 1;
     public bool $hasMorePages = true;
+    public ?string $deleteError = null;
 
     protected $listeners = ['duplicates-updated' => '$refresh'];
 
@@ -31,21 +32,28 @@ class DuplicateBrowser extends Component
     {
         $this->selectedImages = [];
         $this->currentPage = 1;
-        $this->hasMorePages = true;
+        $this->checkHasMorePages();
     }
 
     public function updatedFilterType(): void
     {
         $this->selectedImages = [];
         $this->currentPage = 1;
-        $this->hasMorePages = true;
+        $this->checkHasMorePages();
     }
 
     public function updatedFilterLabel(): void
     {
         $this->selectedImages = [];
         $this->currentPage = 1;
-        $this->hasMorePages = true;
+        $this->checkHasMorePages();
+    }
+
+    public function checkHasMorePages(): void
+    {
+        $total = $this->getQuery()->count();
+        $totalPages = max(1, (int) ceil($total / $this->perPage));
+        $this->hasMorePages = $this->currentPage < $totalPages;
     }
 
     public function getDatasetsProperty()
@@ -83,8 +91,9 @@ class DuplicateBrowser extends Component
 
     public function loadMore(): void
     {
+        $total = $this->getQuery()->count();
+        $totalPages = max(1, (int) ceil($total / $this->perPage));
         $this->currentPage++;
-        $totalPages = (int) ceil($this->getQuery()->count() / $this->perPage);
         if ($this->currentPage >= $totalPages) {
             $this->hasMorePages = false;
         }
@@ -128,10 +137,16 @@ class DuplicateBrowser extends Component
     {
         $service = app(ImageDeletionService::class);
         $ids = array_map('intval', array_keys($this->selectedImages));
-        $service->deleteImages($ids);
+        $results = $service->deleteImages($ids);
 
         $this->selectedImages = [];
         $this->showDeleteModal = false;
+
+        if ($results['skipped'] > 0) {
+            $this->deleteError = "{$results['skipped']} gambar berhasil dihapus dari metadata (file tidak ditemukan di storage, hanya metadata yang dihapus).";
+        } else {
+            $this->deleteError = null;
+        }
 
         $dupService = app(DuplicateDetectionService::class);
         $dupService->detectAll();

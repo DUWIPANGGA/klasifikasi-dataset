@@ -20,6 +20,7 @@ class ImageDeletionService
         $results = [
             'success' => 0,
             'failed' => 0,
+            'skipped' => 0,
             'errors' => [],
         ];
 
@@ -31,11 +32,12 @@ class ImageDeletionService
                 $deleted = $this->storage->deleteFile($image->filepath);
 
                 if (!$deleted && !$force) {
-                    $results['failed']++;
+                    $image->delete();
+                    $results['skipped']++;
                     $results['errors'][] = [
                         'image_id' => $image->id,
                         'filename' => $image->filename,
-                        'error' => 'File deletion failed on storage',
+                        'error' => 'File not found in storage, metadata deleted',
                     ];
                     continue;
                 }

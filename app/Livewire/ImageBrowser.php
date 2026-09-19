@@ -14,6 +14,7 @@ class ImageBrowser extends Component
     public string $filterLabel = '';
     public string $filterStatus = '';
     public string $filterFish = '';
+    public string $filterDuplicate = '';
     public array $selected = [];
     public bool $showDeleteModal = false;
 
@@ -29,6 +30,12 @@ class ImageBrowser extends Component
     public int $bulkDatasetId = 0;
     public string $bulkResult = '';
     public bool $bulkProcessing = false;
+
+    public bool $showBulkEditModal = false;
+    public string $bulkEditLabel = '';
+    public string $bulkEditFishName = '';
+    public int $bulkEditDatasetId = 0;
+    public string $bulkEditStatus = '';
 
     public int $perPage = 48;
     public bool $hasMorePages = true;
@@ -64,6 +71,13 @@ class ImageBrowser extends Component
         $this->hasMorePages = true;
     }
 
+    public function updatedFilterDuplicate(): void
+    {
+        $this->selected = [];
+        $this->currentPage = 1;
+        $this->hasMorePages = true;
+    }
+
     public function updatedSearch(): void
     {
         $this->selected = [];
@@ -77,6 +91,7 @@ class ImageBrowser extends Component
         'filterLabel' => ['except' => ''],
         'filterStatus' => ['except' => ''],
         'filterFish' => ['except' => ''],
+        'filterDuplicate' => ['except' => ''],
     ];
 
     public function getDatasetsProperty()
@@ -129,6 +144,7 @@ class ImageBrowser extends Component
             return;
         }
 
+        $dataset = Dataset::find($datasetId);
         $filename = basename(parse_url($this->addUrl, PHP_URL_PATH)) ?: 'image_' . time() . '.jpg';
 
         Image::create([
@@ -138,7 +154,7 @@ class ImageBrowser extends Component
             'image_url' => $this->addUrl,
             'thumbnail' => $this->addUrl,
             'hash' => md5($this->addUrl),
-            'fish_name' => 'Anabas testudineus',
+            'fish_name' => $dataset->fish_name ?? 'unknown',
             'label' => $label,
             'status' => 'active',
         ]);
@@ -200,6 +216,9 @@ class ImageBrowser extends Component
 
         $this->bulkProcessing = true;
 
+        $dataset = Dataset::find($this->bulkDatasetId);
+        $fishName = $dataset->fish_name ?? 'unknown';
+
         $added = 0;
         $skippedDup = 0;
 
@@ -220,7 +239,7 @@ class ImageBrowser extends Component
                 'image_url' => $url,
                 'thumbnail' => $url,
                 'hash' => $hash,
-                'fish_name' => 'Anabas testudineus',
+                'fish_name' => $fishName,
                 'label' => $label,
                 'status' => 'active',
             ]);
@@ -258,11 +277,29 @@ class ImageBrowser extends Component
         }
     }
 
+    public function toggleSelectAllMatching(): void
+    {
+        $allIds = $this->getQuery()->pluck('id')->map(fn($id) => (string) $id)->toArray();
+
+        if ($this->isAllMatchingSelected()) {
+            $this->selected = [];
+        } else {
+            $this->selected = $allIds;
+        }
+    }
+
     public function isAllPageSelected(): bool
     {
         $pageIds = $this->getPageIds();
         if (empty($pageIds)) return false;
         return count(array_intersect($pageIds, $this->selected)) === count($pageIds);
+    }
+
+    public function isAllMatchingSelected(): bool
+    {
+        $allIds = $this->getQuery()->pluck('id')->map(fn($id) => (string) $id)->toArray();
+        if (empty($allIds)) return false;
+        return count(array_intersect($allIds, $this->selected)) === count($allIds);
     }
 
     public function getPageIds(): array
@@ -284,9 +321,53 @@ class ImageBrowser extends Component
         $this->selected = [];
     }
 
-    public function updateLabel(int $imageId, string $newLabel): void
+    public function updateImage(int $imageId, string $newLabel, string $fishName, int $datasetId): void
     {
-        Image::where('id', $imageId)->update(['label' => $newLabel]);
+        Image::where('id', $imageId)->update([
+            'label' => $newLabel,
+            'fish_name' => $fishName,
+            'dataset_id' => $datasetId,
+        ]);
+    }
+
+    public function quickLabel(string $label): void
+    {
+        if (empty($this->selected)) return;
+        $ids = array_map('intval', $this->selected);
+        Image::whereIn('id', $ids)->update(['label' => $label]);
+        $this->selected = [];
+        $this->dispatch('images-deleted');
+    }
+
+    public function openBulkEditModal(): void
+    {
+        if (empty($this->selected)) return;
+        $this->showBulkEditModal = true;
+        $this->bulkEditLabel = '';
+        $this->bulkEditFishName = '';
+        $this->bulkEditDatasetId = 0;
+        $this->bulkEditStatus = '';
+    }
+
+    public function applyBulkEdit(): void
+    {
+        if (empty($this->selected)) return;
+
+        $ids = array_map('intval', $this->selected);
+        $updates = [];
+
+        if ($this->bulkEditLabel !== '') $updates['label'] = $this->bulkEditLabel;
+        if ($this->bulkEditFishName !== '') $updates['fish_name'] = $this->bulkEditFishName;
+        if ($this->bulkEditDatasetId > 0) $updates['dataset_id'] = $this->bulkEditDatasetId;
+        if ($this->bulkEditStatus !== '') $updates['status'] = $this->bulkEditStatus;
+
+        if (!empty($updates)) {
+            Image::whereIn('id', $ids)->update($updates);
+        }
+
+        $this->showBulkEditModal = false;
+        $this->selected = [];
+        $this->dispatch('images-deleted');
     }
 
     public function deleteSingle(int $imageId): void
@@ -307,7 +388,9 @@ class ImageBrowser extends Component
             $query->where(function ($q) {
                 $q->where('filename', 'like', "%{$this->search}%")
                   ->orWhere('hash', 'like', "%{$this->search}%")
-                  ->orWhere('fish_name', 'like', "%{$this->search}%");
+                  ->orWhere('fish_name', 'like', "%{$this->search}%")
+                  ->orWhere('label', 'like', "%{$this->search}%")
+                  ->orWhere('common_name', 'like', "%{$this->search}%");
             });
         }
 
@@ -321,6 +404,14 @@ class ImageBrowser extends Component
 
         if ($this->filterFish) {
             $query->where('fish_name', $this->filterFish);
+        }
+
+        if ($this->filterDuplicate === 'duplicate') {
+            $query->whereHas('duplicateGroups');
+        } elseif ($this->filterDuplicate === 'cross_label') {
+            $query->whereHas('duplicateGroups', fn($q) => $q->where('type', 'cross_label'));
+        } elseif ($this->filterDuplicate === 'unique') {
+            $query->whereDoesntHave('duplicateGroups');
         }
 
         return $query->with('duplicateGroups')->orderBy('id', 'desc');
@@ -356,6 +447,7 @@ class ImageBrowser extends Component
             'total' => $total,
             'bulkCount' => $this->getBulkCount(),
             'allPageSelected' => $this->isAllPageSelected(),
+            'allMatchingCount' => $this->getQuery()->count(),
         ]);
     }
 }

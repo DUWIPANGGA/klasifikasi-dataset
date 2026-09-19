@@ -23,7 +23,8 @@
             @if(!empty($selectedImages))
                 <span class="text-sm text-blue-700 dark:text-blue-300 font-medium">{{ count($selectedImages) }} selected</span>
                 <button wire:click="deleteSelected"
-                        class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 inline-flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     Delete Selected
                 </button>
             @endif
@@ -33,6 +34,20 @@
             </button>
         </div>
     </div>
+
+    @if($deleteError)
+        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
+            <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div class="flex-1">
+                <p class="text-sm text-red-700 dark:text-red-300">{{ $deleteError }}</p>
+            </div>
+            <button wire:click="$set('deleteError', null)" class="text-red-400 hover:text-red-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+    @endif
 
     @forelse($groups as $group)
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4 overflow-hidden">
@@ -108,11 +123,11 @@
     </div>
 
     @if($hasMorePages)
-        <div wire:poll.500ms="loadMore" class="py-8 text-center">
-            <div class="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                Loading more groups...
-            </div>
+        <div class="py-4 text-center">
+            <button wire:click="loadMore"
+                    class="inline-flex items-center gap-2 px-6 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                Load More
+            </button>
         </div>
     @else
         <div class="py-8 text-center text-sm text-gray-400 dark:text-gray-500">
@@ -121,7 +136,7 @@
     @endif
 
     @if($showDeleteModal)
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true">
+        <div class="fixed inset-0 z-[9998] overflow-y-auto" aria-modal="true" x-data>
             <div class="flex items-center justify-center min-h-screen px-4">
                 <div class="fixed inset-0 bg-gray-500/75 dark:bg-gray-900/75" wire:click="$set('showDeleteModal', false)"></div>
                 <div class="relative bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full shadow-xl">
@@ -134,9 +149,11 @@
                                 class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm">
                             Cancel
                         </button>
-                        <button wire:click="confirmDelete"
-                                class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
-                            Delete
+                        <button wire:click="confirmDelete" wire:loading.attr="disabled"
+                                class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 disabled:opacity-50 inline-flex items-center gap-2">
+                            <svg wire:loading wire:loading.remove class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            <span wire:loading.remove>Delete</span>
+                            <span wire:loading>Menghapus...</span>
                         </button>
                     </div>
                 </div>

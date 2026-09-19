@@ -10,7 +10,7 @@
 <body class="h-full bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
     <div class="flex h-full">
         <x-sidebar />
-        <main class="flex-1 overflow-auto">
+        <main class="flex-1 overflow-auto relative z-0">
             <div class="p-6">
                 {{ $slot }}
             </div>

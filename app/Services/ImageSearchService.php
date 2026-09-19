@@ -63,8 +63,8 @@ class ImageSearchService
             $title = $titles[$i] ?? $domain;
 
             $images[] = [
-                'url' => route('image-proxy', ['url' => urlencode($originalUrl)]),
-                'thumbnail' => route('image-proxy', ['url' => urlencode($thumbUrl)]),
+                'url' => route('image-proxy', ['url' => $originalUrl]),
+                'thumbnail' => route('image-proxy', ['url' => $thumbUrl]),
                 'original_url' => $originalUrl,
                 'original_thumbnail' => $thumbUrl,
                 'width' => (int) $w,
@@ -154,8 +154,8 @@ class ImageSearchService
             if (empty($imageUrl)) continue;
 
             $images[] = [
-                'url' => route('image-proxy', ['url' => urlencode($imageUrl)]),
-                'thumbnail' => route('image-proxy', ['url' => urlencode($thumbUrl)]),
+                'url' => route('image-proxy', ['url' => $imageUrl]),
+                'thumbnail' => route('image-proxy', ['url' => $thumbUrl]),
                 'original_url' => $imageUrl,
                 'original_thumbnail' => $thumbUrl,
                 'width' => $item['width'] ?? 0,
@@ -204,8 +204,8 @@ class ImageSearchService
             $imageUrl = $item['link'] ?? '';
             $thumbUrl = $item['image']['thumbnailLink'] ?? $imageUrl;
             $images[] = [
-                'url' => route('image-proxy', ['url' => urlencode($imageUrl)]),
-                'thumbnail' => route('image-proxy', ['url' => urlencode($thumbUrl)]),
+                'url' => route('image-proxy', ['url' => $imageUrl]),
+                'thumbnail' => route('image-proxy', ['url' => $thumbUrl]),
                 'original_url' => $imageUrl,
                 'original_thumbnail' => $thumbUrl,
                 'width' => $item['image']['width'] ?? 0,
@@ -247,8 +247,8 @@ class ImageSearchService
             $imageUrl = $item['contentUrl'] ?? '';
             $thumbUrl = $item['thumbnailUrl'] ?? $imageUrl;
             $images[] = [
-                'url' => route('image-proxy', ['url' => urlencode($imageUrl)]),
-                'thumbnail' => route('image-proxy', ['url' => urlencode($thumbUrl)]),
+                'url' => route('image-proxy', ['url' => $imageUrl]),
+                'thumbnail' => route('image-proxy', ['url' => $thumbUrl]),
                 'original_url' => $imageUrl,
                 'original_thumbnail' => $thumbUrl,
                 'width' => $item['width'] ?? 0,

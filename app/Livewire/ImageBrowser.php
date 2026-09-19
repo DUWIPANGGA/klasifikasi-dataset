@@ -305,8 +305,7 @@ class ImageBrowser extends Component
     public function getPageIds(): array
     {
         return $this->getQuery()
-            ->offset(($this->currentPage - 1) * $this->perPage)
-            ->limit($this->perPage)
+            ->limit($this->currentPage * $this->perPage)
             ->pluck('id')
             ->map(fn($id) => (string) $id)
             ->toArray();
@@ -445,9 +444,7 @@ class ImageBrowser extends Component
     {
         $query = $this->getQuery();
         $total = $query->count();
-        $images = $query->offset(($this->currentPage - 1) * $this->perPage)
-            ->limit($this->perPage)
-            ->get();
+        $images = $query->limit($this->currentPage * $this->perPage)->get();
 
         return view('livewire.image-browser', [
             'images' => $images,

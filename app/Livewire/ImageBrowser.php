@@ -297,14 +297,19 @@ class ImageBrowser extends Component
 
     public function isAllMatchingSelected(): bool
     {
-        $allIds = $this->getQuery()->pluck('id')->map(fn($id) => (string) $id)->toArray();
-        if (empty($allIds)) return false;
-        return count(array_intersect($allIds, $this->selected)) === count($allIds);
+        $total = $this->getQuery()->count();
+        if ($total === 0) return false;
+        return count($this->selected) >= $total;
     }
 
     public function getPageIds(): array
     {
-        return $this->getQuery()->pluck('id')->map(fn($id) => (string) $id)->toArray();
+        return $this->getQuery()
+            ->offset(($this->currentPage - 1) * $this->perPage)
+            ->limit($this->perPage)
+            ->pluck('id')
+            ->map(fn($id) => (string) $id)
+            ->toArray();
     }
 
     public function toggleSelect(string $id): void
@@ -438,16 +443,18 @@ class ImageBrowser extends Component
 
     public function render()
     {
-        $allImages = $this->getQuery()->get();
-        $total = $allImages->count();
-        $images = $allImages->slice(0, $this->currentPage * $this->perPage);
+        $query = $this->getQuery();
+        $total = $query->count();
+        $images = $query->offset(($this->currentPage - 1) * $this->perPage)
+            ->limit($this->perPage)
+            ->get();
 
         return view('livewire.image-browser', [
             'images' => $images,
             'total' => $total,
             'bulkCount' => $this->getBulkCount(),
             'allPageSelected' => $this->isAllPageSelected(),
-            'allMatchingCount' => $this->getQuery()->count(),
+            'allMatchingCount' => $total,
         ]);
     }
 }

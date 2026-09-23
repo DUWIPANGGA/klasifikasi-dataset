@@ -13,7 +13,6 @@ class ImageBrowser extends Component
     public string $search = '';
     public string $filterLabel = '';
     public string $filterStatus = '';
-    public string $filterFish = '';
     public string $filterDuplicate = '';
     public array $selected = [];
     public bool $showDeleteModal = false;
@@ -33,7 +32,6 @@ class ImageBrowser extends Component
 
     public bool $showBulkEditModal = false;
     public string $bulkEditLabel = '';
-    public string $bulkEditFishName = '';
     public int $bulkEditDatasetId = 0;
     public string $bulkEditStatus = '';
 
@@ -64,13 +62,6 @@ class ImageBrowser extends Component
         $this->hasMorePages = true;
     }
 
-    public function updatedFilterFish(): void
-    {
-        $this->selected = [];
-        $this->currentPage = 1;
-        $this->hasMorePages = true;
-    }
-
     public function updatedFilterDuplicate(): void
     {
         $this->selected = [];
@@ -90,7 +81,6 @@ class ImageBrowser extends Component
         'search' => ['except' => ''],
         'filterLabel' => ['except' => ''],
         'filterStatus' => ['except' => ''],
-        'filterFish' => ['except' => ''],
         'filterDuplicate' => ['except' => ''],
     ];
 
@@ -106,15 +96,6 @@ class ImageBrowser extends Component
             $q->where('dataset_id', $this->filterDataset);
         }
         return $q->pluck('label')->filter()->sort()->values()->toArray();
-    }
-
-    public function getFishNamesProperty(): array
-    {
-        $q = Image::distinct()->select('fish_name');
-        if ($this->filterDataset) {
-            $q->where('dataset_id', $this->filterDataset);
-        }
-        return $q->pluck('fish_name')->filter()->sort()->values()->toArray();
     }
 
     public function openAddModal(): void
@@ -325,11 +306,10 @@ class ImageBrowser extends Component
         $this->selected = [];
     }
 
-    public function updateImage(int $imageId, string $newLabel, string $fishName, int $datasetId): void
+    public function updateImage(int $imageId, string $newLabel, int $datasetId): void
     {
         Image::where('id', $imageId)->update([
             'label' => $newLabel,
-            'fish_name' => $fishName,
             'dataset_id' => $datasetId,
         ]);
     }
@@ -353,7 +333,6 @@ class ImageBrowser extends Component
         if (empty($this->selected)) return;
         $this->showBulkEditModal = true;
         $this->bulkEditLabel = '';
-        $this->bulkEditFishName = '';
         $this->bulkEditDatasetId = 0;
         $this->bulkEditStatus = '';
     }
@@ -366,7 +345,6 @@ class ImageBrowser extends Component
         $updates = [];
 
         if ($this->bulkEditLabel !== '') $updates['label'] = $this->bulkEditLabel;
-        if ($this->bulkEditFishName !== '') $updates['fish_name'] = $this->bulkEditFishName;
         if ($this->bulkEditDatasetId > 0) $updates['dataset_id'] = $this->bulkEditDatasetId;
         if ($this->bulkEditStatus !== '') $updates['status'] = $this->bulkEditStatus;
 
@@ -397,7 +375,6 @@ class ImageBrowser extends Component
             $query->where(function ($q) {
                 $q->where('filename', 'like', "%{$this->search}%")
                   ->orWhere('hash', 'like', "%{$this->search}%")
-                  ->orWhere('fish_name', 'like', "%{$this->search}%")
                   ->orWhere('label', 'like', "%{$this->search}%")
                   ->orWhere('common_name', 'like', "%{$this->search}%");
             });
@@ -409,10 +386,6 @@ class ImageBrowser extends Component
 
         if ($this->filterStatus) {
             $query->where('status', $this->filterStatus);
-        }
-
-        if ($this->filterFish) {
-            $query->where('fish_name', $this->filterFish);
         }
 
         if ($this->filterDuplicate === 'duplicate') {

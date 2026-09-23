@@ -17,7 +17,7 @@
                         {{-- Search bar --}}
                         <div class="flex gap-2">
                             <input type="text" wire:model="query" wire:keydown.enter="search"
-                                   placeholder="Search fish images... (e.g., cupang anchor worm, betta fish disease)"
+                                   placeholder="Search disease images... (e.g., anchor worm, ich, fin rot)"
                                    class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500">
                             <button wire:click="search" wire:loading.attr="disabled"
                                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50">
@@ -37,13 +37,8 @@
                                 </select>
                             </div>
                             <div class="flex-1">
-                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Label (auto)</label>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Disease (auto)</label>
                                 <input type="text" wire:model="filterLabel" placeholder="e.g., anchor_worm"
-                                       class="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                            </div>
-                            <div class="flex-1">
-                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Fish Name (auto)</label>
-                                <input type="text" wire:model="filterFish"
                                        class="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                             </div>
                         </div>
@@ -63,7 +58,7 @@
                         @elseif(empty($results))
                             <div class="text-center py-12 text-gray-500 dark:text-gray-400">
                                 <svg class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                <p>Search for fish disease images to import</p>
+                                <p>Search for disease images to import</p>
                             </div>
                         @else
                             {{-- Selection bar --}}

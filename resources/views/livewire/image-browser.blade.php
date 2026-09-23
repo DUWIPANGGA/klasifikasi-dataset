@@ -1,6 +1,6 @@
 <div x-data="{
-    ctx: false, ctxX: 0, ctxY: 0, ctxId: null, ctxLabel: '', ctxDataset: null, ctxFishName: '',
-    editingLabel: false, editVal: '', editDataset: null, editFishName: '',
+    ctx: false, ctxX: 0, ctxY: 0, ctxId: null, ctxLabel: '', ctxDataset: null,
+    editingLabel: false, editVal: '', editDataset: null,
     close() { this.ctx = false; this.editingLabel = false; },
     init() {
         this.$watch('ctx', (v) => {
@@ -41,7 +41,7 @@
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 py-1 min-w-[140px]">
                 <template x-if="!editingLabel">
                     <div>
-                        <button @click="editingLabel = true; editVal = ctxLabel; editDataset = ctxDataset; editFishName = ctxFishName"
+                        <button @click="editingLabel = true; editVal = ctxLabel; editDataset = ctxDataset"
                                 class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             Edit
@@ -65,12 +65,6 @@
                             </select>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1 px-1">Jenis Ikan:</p>
-                            <input type="text" x-model="editFishName"
-                                   class="w-full text-sm rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-2 py-1.5"
-                                   placeholder="Fish species name...">
-                        </div>
-                        <div>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mb-1 px-1">Dataset:</p>
                             <select x-model="editDataset"
                                     class="w-full text-sm rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-2 py-1.5">
@@ -80,7 +74,7 @@
                             </select>
                         </div>
                         <div class="flex gap-1">
-                            <button @click="close(); $wire.updateImage(ctxId, editVal, editFishName, editDataset)"
+                            <button @click="close(); $wire.updateImage(ctxId, editVal, editDataset)"
                                     class="flex-1 px-2 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 font-medium">Save</button>
                             <button @click="editingLabel = false"
                                     class="px-2 py-1.5 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs rounded hover:bg-gray-400">Cancel</button>
@@ -101,19 +95,13 @@
         </select>
         <div class="flex-1 min-w-[200px]">
             <input type="text" wire:model.live.debounce.300ms="search"
-                   placeholder="Search filename, hash, fish name, label..."
+                   placeholder="Search filename, hash, disease, label..."
                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500">
         </div>
         <select wire:model.live="filterLabel" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm">
             <option value="">All Labels</option>
             @foreach($this->labels as $label)
                 <option value="{{ $label }}">{{ $label }}</option>
-            @endforeach
-        </select>
-        <select wire:model.live="filterFish" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm">
-            <option value="">All Fish</option>
-            @foreach($this->fishNames as $fish)
-                <option value="{{ $fish }}">{{ $fish }}</option>
             @endforeach
         </select>
         <select wire:model.live="filterStatus" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white shadow-sm">
@@ -229,7 +217,7 @@
                     lastIdx = {{ $idx }};
                  "
                  data-id="{{ $image->id }}"
-                 @contextmenu.prevent.stop="ctx = true; ctxX = $event.clientX; ctxY = $event.clientY; ctxId = {{ $image->id }}; ctxLabel = '{{ $image->label }}'; ctxDataset = {{ $image->dataset_id }}; ctxFishName = '{{ $image->fish_name }}'"
+                 @contextmenu.prevent.stop="ctx = true; ctxX = $event.clientX; ctxY = $event.clientY; ctxId = {{ $image->id }}; ctxLabel = '{{ $image->label }}'; ctxDataset = {{ $image->dataset_id }}"
                  :class="sel['{{ $image->id }}'] ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-gray-200 dark:border-gray-700'"
                  class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border overflow-hidden group hover:shadow-md transition-all duration-150 cursor-pointer select-none">
                 <div class="relative aspect-square bg-gray-100 dark:bg-gray-700">
@@ -264,13 +252,9 @@
                 </div>
                 <div class="p-3">
                     <p class="text-xs font-mono text-gray-500 dark:text-gray-400 truncate" title="{{ $image->filename }}">{{ $image->filename }}</p>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white mt-1 truncate">{{ $image->fish_name }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $image->common_name }}</p>
-                    <div class="mt-2 flex items-center justify-between">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
-                            {{ $image->label === 'healthy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' }}">
-                            {{ $image->label }}
-                        </span>
+                    <p class="text-sm font-medium text-gray-900 dark:text-white mt-1 truncate">{{ $image->label }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $image->fish_name }}@if($image->common_name) · {{ $image->common_name }}@endif</p>
+                    <div class="mt-2 flex items-center justify-end">
                         <a href="{{ route('images.show', $image) }}"
                            wire:click.stop
                            class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400">View</a>
@@ -474,11 +458,6 @@
                                     <option value="{{ $l }}">{{ $l }}</option>
                                 @endforeach
                             </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Jenis Ikan</label>
-                            <input type="text" wire:model="bulkEditFishName" placeholder="-- Tidak diubah --"
-                                   class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dataset</label>

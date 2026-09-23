@@ -21,7 +21,6 @@ class ImageSearch extends Component
 
     public int $filterDataset = 0;
     public string $filterLabel = '';
-    public string $filterFish = 'Anabas testudineus';
 
     public bool $importing = false;
     public int $importCount = 0;
@@ -114,7 +113,6 @@ class ImageSearch extends Component
         $this->importing = true;
         $datasetId = $this->filterDataset;
         $label = $this->filterLabel ?: 'unknown';
-        $fishName = $this->filterFish ?: 'Anabas testudineus';
 
         $existingHashes = Image::where('dataset_id', $datasetId)
             ->whereIn('hash', $this->selected)
@@ -151,8 +149,8 @@ class ImageSearch extends Component
                 'width' => $image['width'] ?? null,
                 'height' => $image['height'] ?? null,
                 'hash' => $hash,
-                'fish_name' => $fishName,
-                'common_name' => $fishName,
+                'fish_name' => 'unknown',
+                'common_name' => null,
                 'label' => $label,
                 'status' => 'active',
                 'created_at' => $now,

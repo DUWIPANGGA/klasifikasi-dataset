@@ -54,6 +54,36 @@ class MetadataImportService
         return $filepath;
     }
 
+    protected function first(array $row, array $keys)
+    {
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $row) && $row[$key] !== '' && $row[$key] !== null) {
+                return $row[$key];
+            }
+        }
+        return null;
+    }
+
+    public function mapRow(array $row): array
+    {
+        return [
+            'filename' => $this->first($row, ['local_filename', 'original_filename', 'filename']),
+            'filepath' => $this->first($row, ['local_filepath', 'original_filepath', 'filepath']),
+            'image_url' => $this->first($row, ['image_url']),
+            'thumbnail' => $this->first($row, ['thumbnail']),
+            'source' => $this->first($row, ['source']),
+            'title' => $this->first($row, ['title']),
+            'width' => $this->first($row, ['downloaded_width', 'original_width', 'width']),
+            'height' => $this->first($row, ['downloaded_height', 'original_height', 'height']),
+            'hash' => $this->first($row, ['downloaded_hash', 'original_hash', 'hash']),
+            'downloaded_at' => $this->first($row, ['downloaded_at']),
+            'fish_name' => $this->first($row, ['fish_name']),
+            'common_name' => $this->first($row, ['common_name']),
+            'label' => $this->first($row, ['label']),
+            'query' => $this->first($row, ['query']),
+        ];
+    }
+
     public function validateRow(array $row): array
     {
         $errors = [];
@@ -84,6 +114,7 @@ class MetadataImportService
 
         $validRows = [];
         foreach ($rows as $row) {
+            $row = $this->mapRow($row);
             $errors = $this->validateRow($row);
             if (!empty($errors)) {
                 $stats['invalid']++;
@@ -156,6 +187,7 @@ class MetadataImportService
 
         $validRows = [];
         foreach ($allRows as $row) {
+            $row = $this->mapRow($row);
             $errors = $this->validateRow($row);
             if (!empty($errors)) {
                 $stats['invalid']++;

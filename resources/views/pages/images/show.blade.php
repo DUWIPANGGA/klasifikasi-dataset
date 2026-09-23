@@ -39,7 +39,7 @@
                         <dd class="text-gray-900 dark:text-white">{{ $image->common_name ?? '-' }}</dd>
                     </div>
                     <div>
-                        <dt class="font-medium text-gray-500 dark:text-gray-400">Label</dt>
+                        <dt class="font-medium text-gray-500 dark:text-gray-400">Disease</dt>
                         <dd>
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                                 {{ $image->label === 'healthy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' }}">

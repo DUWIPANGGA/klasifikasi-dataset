@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Dataset;
 use App\Models\Image;
+use App\Support\GoogleDriveHelper;
 use Livewire\Component;
 
 class DatasetManager extends Component
@@ -96,14 +97,16 @@ class DatasetManager extends Component
             $label = $this->imageNewLabel;
         }
 
-        $filename = basename(parse_url($this->imageUrl, PHP_URL_PATH)) ?: 'image_' . time() . '.jpg';
+        $filename = GoogleDriveHelper::getSafeFilename($this->imageUrl);
+        $directUrl = GoogleDriveHelper::toDirectImageUrl($this->imageUrl);
+        $thumbnailUrl = GoogleDriveHelper::toThumbnailUrl($this->imageUrl, 400);
 
         Image::create([
             'dataset_id' => $this->addImageDatasetId,
             'filename' => $filename,
             'filepath' => $filename,
-            'image_url' => $this->imageUrl,
-            'thumbnail' => $this->imageUrl,
+            'image_url' => $directUrl,
+            'thumbnail' => $thumbnailUrl,
             'hash' => md5($this->imageUrl),
             'fish_name' => 'Anabas testudineus',
             'label' => $label,

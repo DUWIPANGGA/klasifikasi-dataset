@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\GoogleDriveHelper;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -13,6 +14,10 @@ class ImageProxyController extends Controller
 
         if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
             return response('Invalid URL', 400);
+        }
+
+        if (GoogleDriveHelper::isGoogleDriveUrl($url)) {
+            $url = GoogleDriveHelper::toDirectImageUrl($url);
         }
 
         $ch = curl_init($url);

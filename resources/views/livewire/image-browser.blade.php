@@ -322,7 +322,7 @@
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image URL *</label>
-                            <input type="url" wire:model="addUrl" placeholder="https://drive.google.com/uc?export=view&id=..."
+                            <input type="url" wire:model="addUrl" placeholder="https://drive.google.com/file/d/.../view?usp=drive_link"
                                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500">
                             @error('addUrl') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
@@ -373,10 +373,10 @@
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Image URLs <span class="text-gray-400">(one per line)</span>
+                                Image URLs <span class="text-gray-400">(one per line, supports Google Drive links)</span>
                             </label>
                             <textarea wire:model="bulkUrls" rows="10"
-                                      placeholder="https://drive.google.com/uc?export=view&id=abc123&#10;https://drive.google.com/uc?export=view&id=def456&#10;https://drive.google.com/uc?export=view&id=ghi789"
+                                      placeholder="https://drive.google.com/file/d/1EP27H7JJ4ua_d6NgFMfZbrdptRxfI1b2/view?usp=drive_link&#10;https://drive.google.com/file/d/.../view&#10;https://drive.google.com/uc?export=view&id=..."
                                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 font-mono text-sm"></textarea>
                             @if($bulkCount > 0)
                                 <p class="text-sm text-purple-600 dark:text-purple-400 mt-1 font-medium">{{ $bulkCount }} URL(s) detected</p>

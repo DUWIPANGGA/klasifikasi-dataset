@@ -149,7 +149,7 @@
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Image URL *</label>
-                            <input type="url" wire:model="imageUrl" placeholder="https://drive.google.com/uc?export=view&id=..."
+                            <input type="url" wire:model="imageUrl" placeholder="https://drive.google.com/file/d/.../view?usp=drive_link"
                                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500">
                             @error('imageUrl') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>

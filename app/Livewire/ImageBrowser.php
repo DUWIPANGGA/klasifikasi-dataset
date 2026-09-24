@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Dataset;
 use App\Models\Image;
 use App\Services\ImageDeletionService;
+use App\Support\GoogleDriveHelper;
 use Livewire\Component;
 
 class ImageBrowser extends Component
@@ -126,14 +127,16 @@ class ImageBrowser extends Component
         }
 
         $dataset = Dataset::find($datasetId);
-        $filename = basename(parse_url($this->addUrl, PHP_URL_PATH)) ?: 'image_' . time() . '.jpg';
+        $filename = GoogleDriveHelper::getSafeFilename($this->addUrl);
+        $directUrl = GoogleDriveHelper::toDirectImageUrl($this->addUrl);
+        $thumbnailUrl = GoogleDriveHelper::toThumbnailUrl($this->addUrl, 400);
 
         Image::create([
             'dataset_id' => $datasetId,
             'filename' => $filename,
             'filepath' => $filename,
-            'image_url' => $this->addUrl,
-            'thumbnail' => $this->addUrl,
+            'image_url' => $directUrl,
+            'thumbnail' => $thumbnailUrl,
             'hash' => md5($this->addUrl),
             'fish_name' => $dataset->fish_name ?? 'unknown',
             'label' => $label,
@@ -211,14 +214,16 @@ class ImageBrowser extends Component
                 continue;
             }
 
-            $filename = basename(parse_url($url, PHP_URL_PATH)) ?: 'image_' . time() . '_' . substr($hash, 0, 6) . '.jpg';
+            $filename = GoogleDriveHelper::getSafeFilename($url);
+            $directUrl = GoogleDriveHelper::toDirectImageUrl($url);
+            $thumbnailUrl = GoogleDriveHelper::toThumbnailUrl($url, 400);
 
             Image::create([
                 'dataset_id' => $this->bulkDatasetId,
                 'filename' => $filename,
                 'filepath' => $filename,
-                'image_url' => $url,
-                'thumbnail' => $url,
+                'image_url' => $directUrl,
+                'thumbnail' => $thumbnailUrl,
                 'hash' => $hash,
                 'fish_name' => $fishName,
                 'label' => $label,

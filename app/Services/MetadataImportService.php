@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Dataset;
 use App\Models\Image;
 use App\Services\Storage\DatasetStorageInterface;
+use App\Support\GoogleDriveHelper;
 use Illuminate\Support\Facades\DB;
 
 class MetadataImportService
@@ -66,11 +67,21 @@ class MetadataImportService
 
     public function mapRow(array $row): array
     {
+        $imageUrl = $this->first($row, ['image_url']);
+        $thumbnail = $this->first($row, ['thumbnail']);
+
+        if ($imageUrl && GoogleDriveHelper::isGoogleDriveUrl($imageUrl)) {
+            $imageUrl = GoogleDriveHelper::toDirectImageUrl($imageUrl);
+        }
+        if ($thumbnail && GoogleDriveHelper::isGoogleDriveUrl($thumbnail)) {
+            $thumbnail = GoogleDriveHelper::toThumbnailUrl($thumbnail, 400);
+        }
+
         return [
             'filename' => $this->first($row, ['local_filename', 'original_filename', 'filename']),
             'filepath' => $this->first($row, ['local_filepath', 'original_filepath', 'filepath']),
-            'image_url' => $this->first($row, ['image_url']),
-            'thumbnail' => $this->first($row, ['thumbnail']),
+            'image_url' => $imageUrl,
+            'thumbnail' => $thumbnail,
             'source' => $this->first($row, ['source']),
             'title' => $this->first($row, ['title']),
             'width' => $this->first($row, ['downloaded_width', 'original_width', 'width']),

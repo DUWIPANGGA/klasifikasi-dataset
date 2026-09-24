@@ -13,7 +13,7 @@ class ImageController extends Controller
 
     public function show(Image $image)
     {
-        $imageUrl = $image->thumbnail ?: $image->image_url;
+        $imageUrl = $image->display_url ?: ($image->thumbnail ?: $image->image_url);
 
         $storage = app(\App\Services\Storage\DatasetStorageInterface::class);
         $fileExists = $image->file_exists;
